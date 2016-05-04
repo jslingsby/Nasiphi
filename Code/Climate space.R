@@ -1,14 +1,15 @@
 ## R scripts for calculating climate stability 
 ## requires these libraries 
-#library(rgdal)
-#library(geometry) 
-#library(foreign)
+library(rgdal)
+library(geometry) 
+library(foreign)
 
 #data -- requires ascii rasters describing variables of climate space in present and future, and spatial planning units, all with the same cell size, extent, and geographic projection.
 
 #read in data and set up dataframes for historic and future climate info
 
-pu <- readGDAL("path") #raster with numerical planning units
+#as(x, 'SpatialGridDataFrame') # to convert from raster
+pu <- readGDAL("Data/vegmap.asc") #raster with numerical planning units
 names(pu@data)<-"pu"
 cellsize <-  pu@grid@cellsize
 hst <- pu
@@ -19,32 +20,32 @@ planning <- planning[which(planning$pu!="NA"),]
 #read in asciis of historic/future climate data
 
 #hst avg max temp June, July, August
-hsttmax <- readGDAL("path")
+hsttmax <- readGDAL("Data/historical_historical_tmax01.asc")
 hst@data$tmax<-hsttmax$band1
 rm(hsttmax)
 
 #hst avg min temp December, January, February
-hsttmin <- readGDAL("path")
+hsttmin <- readGDAL("Data/historical_historical_tmin07.asc")
 hst@data$tmin<-hsttmin$band1
 rm(hsttmin)
 
 #hst avg climatic water deficit
-hstcwd <- readGDAL("path")
+hstcwd <- readGDAL("Data/historical_historical_mmp01.asc")
 hst@data$cwd<-hstcwd$band1
 rm(hstcwd)
 
 #fut avg max temp June, July, August
-futtmax <- readGDAL("path")
+futtmax <- readGDAL("Data/future_future_RCP45_bcccsm11_20812100_tmax01.1.asc")
 fut@data$tmax<-futtmax@data$band1
 rm(futtmax)
 
 #fut avg min temp December, January, February
-futtmin <- readGDAL("path")
+futtmin <- readGDAL("Data/future_future_RCP45_bcccsm11_20462065_tmin07.1.asc")
 fut@data$tmin<-futtmin@data$band1
 rm(futtmin)
 
 #fut avg climatic water deficit
-futcwd <- readGDAL("path")
+futcwd <- readGDAL("Data/future_future_RCP45_bcccsm11_20812100_mmp01.1.asc")
 fut@data$cwd<-futcwd@data$band1
 rm(futcwd)
 hstlu<-hst@data
@@ -65,8 +66,7 @@ futn$tmin<-range01(futlu$tmin, both$tmin)
 futn$cwd<-range01(futlu$cwd, both$cwd)
 
 #create the climstab results table
-climstab <- data.frame(planning, hullV_hst=rep(NA, length(planning)), hullV_fut=rep(NA, 
-                                                                                    length(planning)), hullV_both=rep(NA, length(planning)), climstab=rep(NA, length(planning)))
+climstab <- data.frame(planning, hullV_hst=rep(NA, length(planning)), hullV_fut=rep(NA, length(planning)), hullV_both=rep(NA, length(planning)), climstab=rep(NA, length(planning)))
 
 xx<-length(planning)
 
@@ -74,8 +74,8 @@ xx<-length(planning)
 for (i in 1:xx){ # where XX is a vector of unique planning unit ids
   
   #subset data by each planning unit
-  sub.hstn <- hstn[which(hstn$pu==i),]
-  sub.futn <- futn[which(futn$pu==i),]
+  sub.hstn <- hstn[which(hstn$pu==planning[i]),]
+  sub.futn <- futn[which(futn$pu==planning[i]),]
   sub.bothn <- rbind(sub.hstn, sub.futn)  
   
   
@@ -94,4 +94,4 @@ for (i in 1:xx){ # where XX is a vector of unique planning unit ids
 } #end loop through planning values
 
 #write results to a table
-write.csv(climstab, "path/climstab.csv")
+write.csv(climstab, "Data/climstab.csv")
