@@ -114,9 +114,9 @@ dat <- na.omit(dat)
 dtbl <- tbl_df(dat)
 rm(dat)
 
-original <- summarise(group_by(dtbl, VegType), original = (length(Landcover)*900)/10000)
-remaining <- summarise(group_by(dtbl, VegType), remaining = (sum(Landcover)*900)/10000)
-protected <- summarise(group_by(filter(dtbl, Protected>0) , Fragments)) protected = (sum(Landcover)*900)/10000))
+#original <- summarise(group_by(dtbl, VegType), original = (length(Landcover)*900)/10000)
+#remaining <- summarise(group_by(dtbl, VegType), remaining = (sum(Landcover)*900)/10000)
+#protected <- summarise(group_by(filter(dtbl, Protected>0) , Fragments)) protected = (sum(Landcover)*900)/10000))
 
 
 
