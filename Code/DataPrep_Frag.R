@@ -4,7 +4,7 @@
 ######## analysis
 ##########################################
 ######## Compiled by Nasiphi Ntshanga 2016
-######## Last edited: 09 May 2016
+######## Last edited: 16 May 2016
 ##########################################
 
 ##########################################
@@ -19,7 +19,7 @@ library(igraph)
 
 if(Sys.getenv("USERNAME")=="Receptionist") {datwd <- "C:/Users/Receptionist/Dropbox/Academics/PhD/Data/"}
 if(Sys.getenv("USER")=="jasper") {datwd <- "/Users/jasper/Documents/GIS/VegToolsRaw/"}
-
+if(Sys.getenv("USERNAME")=="jasper") {datwd <- ""}
 ##########################################
 ###2) Get and process data
 ##########################################

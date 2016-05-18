@@ -16,8 +16,8 @@ library(rgdal)
 library(raster)
 
 if(Sys.getenv("USERNAME")=="Receptionist") {climwd <- "C:/Users/Receptionist/Dropbox/Academics/PhD/Data/ClimateData/";datwd <- "C:/Users/Receptionist/Dropbox/Academics/PhD/Data/Rasters/"}
-if(Sys.getenv("USER")=="jasper") {datwd <- "/Users/jasper/Documents/GIS/VegToolsRaw/Rasters/"; climwd <- "/Users/jasper/GIT/Nyasha/Data/Adam/"}
-
+if(Sys.getenv("USERNAME")=="jasper") {datwd <- "C:/Users/jasper/Documents/GIS/VegToolsRaw/Rasters/"; climwd <- "/Users/jasper/GIT/Nyasha/Data/Adam/"}
+if(Sys.getenv("USER")=="jasper") {datwd <- ""; climwd ""}
 ##########################################
 ###2) Prepare planning units data
 ##########################################
