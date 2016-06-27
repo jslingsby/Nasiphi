@@ -1,8 +1,8 @@
 ######## Script for playing with Cape Lowlands 
-######## data (von Hase et al.2003)
+######## data (von Hase et al.2003) and CAPE NATURE
 ##########################################
 ######## Compiled by Nasiphi Ntshanga 2016
-######## Last edited: 10 May 2016
+######## Last edited: 25 June 2016
 ##########################################
 
 ##########################################
@@ -24,7 +24,7 @@ library(FNN)
 
 if(Sys.getenv("USERNAME")=="jasper") {giswd <- "C:/Users/jasper.SAEON/Documents/Nasiphi's/Data/Von Hase et al 2003 Cape Lowlands Report/Lowland_/";
 datwd <-"C:/Users/jasper.SAEON/Documents/Nasiphi's/Data/Von Hase et al 2003 Cape Lowlands Report/Lowland_"}
-#if(Sys.getenv("USERNAME")=="Receptionist") {giswd <- "C:/Users/Receptionist/Dropbox/Academics/PhD/Data/von Hase et al/Lowland_/";
+if(Sys.getenv("USERNAME")=="Receptionist") {giswd <- "C:/Users/Receptionist/Dropbox/Academics/PhD/Data/von Hase et al/Lowland_/";
 datwd <- "C:/Users/Receptionist/Dropbox/Academics/PhD/Data/von Hase et al/PRODUCTS/Fieldwork/"}
 #if(Sys.getenv("USER")=="jasper") {datwd <- ""; giswd <- ""}
 setwd("~/Nasiphi's/Data/Von Hase et al 2003 Cape Lowlands Report/Lowland_")
@@ -43,8 +43,14 @@ proj4string(ob_elginpts) <- "+proj=tmerc +lat_0=0 +lon_0=21 +ellps=WGS84 +datum=
 fragments <- readOGR(paste0(giswd, "Remnants/Remnant_Shape"), layer = "remnants_only_wtm21")
 proj4string(fragments) <- "+proj=tmerc +lat_0=0 +lon_0=21 +ellps=WGS84 +datum=WGS84 +units=m"
 
+#Cape Nature data
+cape <- readOGR("C:/Users/Receptionist/Dropbox/Academics/PhD/Data/Remnants_CAPE2001_Pence2016beta/CAPE_Natural_Remnants", layer = "cape_untransformed_areas_genf15m_gw")
+proj4string(cape) <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs" #EPSG:4326
+
+
 #project and write out data for google earth visualisation
 fragmentsG <- spTransform(fragments, CRSobj = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84"))
+#capeG <- spTransform(cape, CRSobj = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84"))
 
 #plots
 wcptsG <- wcpts@data
@@ -58,6 +64,8 @@ proj4string(obptsG) <- "+proj=longlat +ellps=WGS84 +datum=WGS84"
 writeOGR(fragmentsG, dsn = "Nasiphi's/fragments_plotdat.kml", layer= "fragments", driver = "KML")
 writeOGR(wcptsG, dsn = "Nasiphi's/wcptsG.kml", layer = "wcptsG", driver="KML")
 writeOGR(obptsG, dsn = "Nasiphi's/obptsG.kml", layer = "obptsG", driver="KML")
+
+writeOGR(cape, dsn = "Data/CapeNature.kml", layer = "CapeNature", driver="KML")
 
 ### relate plot locaion to fragments
 

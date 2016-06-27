@@ -67,10 +67,15 @@ if(!file.exists("Data/vmt.grd")) {
 ### create a raster layer for each veg type
 # find a loop function that creates this
 
-##HAVE TO AGGREGATE EACH RASTER
+##get layer for each veg type 
 vtab <- vm@data@attributes[[1]]
+vege <- getValues(veg)
+table(vege)
+
+hist(vege)
 
 veg2 <- veg==2 #veg type 2 only
+
 aggregate(veg2, fact=3, fun=mean, expand=TRUE, na.rm=TRUE, filename='veg2ag')
 veg2ag <- raster("veg2ag.grd")
 veg59 <- veg ==59
@@ -91,12 +96,17 @@ lcpatch = PatchStat(conlc,cellsize = 30) #calculate patch statistics
 colnames(lcpatch)[1] <- "ID"
 levels(conlc) <- lcpatch
 
+#write loop function for each veg type ID in the veg layer
 #vegtype 2
 conv2 = ConnCompLabel(veg2)
 v2patch = PatchStat(conv2,cellsize = 30) #calculate patch statistics
 colnames(v2patch)[1] <- "ID"
 levels(conv2) <- v2patch
-
+#checking area calculations
+sum(v2patch$n.cell)-580459 #minus NAs
+sum(v2patch$area)-522413100 
+3220 *(30*30) #n.cells*cell size
+#including cell size gives you actual area in m^2
 
 #vegtype 2 aggregated to 90m
 conv2a = ConnCompLabel(veg2ag)
