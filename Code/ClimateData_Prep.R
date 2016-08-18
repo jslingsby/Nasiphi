@@ -12,22 +12,51 @@
 library(rgdal)
 library(raster)
 
-if(Sys.getenv("USERNAME")=="Receptionist") {climwd <- "C:/Users/Receptionist/Dropbox/Academics/PhD/Data/ClimateData/";datwd <- "C:/Users/Receptionist/Dropbox/Academics/PhD/Data/Rasters/"}
+if(Sys.getenv("USERNAME")=="nasi") {climwd <- "C:/Users/nasip/Dropbox/Academics/PhD/Data/ClimateData/";datwd <- "C:/Users/nasip/Dropbox/Academics/PhD/Data/Rasters/"}
 if(Sys.getenv("USER")=="jasper") {datwd <- "/Users/jasper/Documents/GIS/VegToolsRaw/Rasters/"; climwd <- "/Users/jasper/GIT/Nyasha/Data/Adam/"}
 
 ##########################################
 ###2) Get and process planning unit data
 ##########################################
 
-###Set extent
+##### planning units (natural and transformed)
+fragments <- readOGR("C:/Users/nasip/Dropbox/Academics/PhD/Data/von Hase et al/Lowland_/Remnants/Remnant_Shape", layer = "remnants_only_wtm21")
+proj4string(fragments) <- "+proj=tmerc +lat_0=0 +lon_0=21 +ellps=WGS84 +datum=WGS84 +units=m"
+cape <- readOGR("C:/Users/nasip/Dropbox/Academics/PhD/Data/Remnants_CAPE2001_Pence2016beta/CAPE_Natural_Remnants", layer = "cape_untransformed_areas_genf15m_gw")
+proj4string(cape) <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs" #EPSG:4326
+cape <- spTransform(cape,lc@crs)
 
-nex <- extent(2030000, 2060000, -4080000, -4010000)
+veg <- raster("Data/westcoast.asc")
+proj4string(veg) <- CRS("+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs")
 
-##### planning units (veg map)
-# land cover transformation areas
+veg <- raster("Data/westUT.asc")
 
-lc <- raster(paste(datwd,"LC13test_web.tif", sep=""))
-proj4string(lc) <- CRS("+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs")
+
+#vegetation
+vm <- raster(paste(datwd, "VEG12test_web.tif", sep=""))
+proj4string(vm) <- CRS("+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs")
+
+#transform cape to landcover
+fragments <- spTransform(fragments,lc@crs)
+
+#set extent based on cape extent
+lc <- mask(lc, fragments, filename="Data/lcs.grd", inverse=FALSE, 
+     updatevalue=NA, updateNA=FALSE, overwrite=T)
+#west coast 
+westcoast <-raster("Data/wc_reno.asc")
+proj4string(westcoast) <- CRS("+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs")
+westcoast <- aggregate(westcoast, 3, fun = "max", na.rm=T) #Aggregate pa into a 90m raster
+writeRaster(westcoast, "Data/westcoast.asc", overwrite=T)
+westcoast <-raster("Data/westcoast.asc")
+proj4string(westcoast) <- CRS("+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs")
+his <- brick(paste(climwd,"currentclimate.grd", sep = ""))
+projectRaster(his, westcoast, filename = "Data/historical", bylayer = T, overwrite = T, suffix = names(his), format="GTiff")
+future <- brick(paste(climwd,"climate_future.grd", sep = ""))
+projectRaster(future, westcoast, filename = "Data/future", bylayer = T, overwrite = T, suffix = names(future)) #if you write as .tif you lose layer names 
+
+future <-brick("Data/future.grd", sep="")
+
+nex <- extent(1986566, 2866431, -4141382, -3632780) #CAPE extent
 lc <- crop(lc, nex) #Crop pa to chosen extent
 
 if(!file.exists("Data/lcs.grd")) {
@@ -41,14 +70,14 @@ if(!file.exists("Data/lcs.grd")) {
   lc <- raster("Data/lcs.grd")
 } else {lc <- raster("Data/lcs.grd")}
 
-### natural landcover
+### veg map
 veg <- raster(paste(datwd, "VEG12test_web.tif", sep=""))
 proj4string(veg) <- CRS("+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs")
 veg <- crop(veg, nex)
 
 ### transformed veg map
 if(!file.exists("Data/vegmap.asc")) {
-  transveg <- mask(veg, lc, filename="Data/vmt", maskvalue= 0, overwrite=TRUE)
+  transveg <- mask(veg, lc, filename="Data/wlc", maskvalue= , overwrite=TRUE)
 } else {transveg <- raster("Data/vmt.grd")}
 
 ###aggregate planning units to 90m and write out the rasters
@@ -58,7 +87,7 @@ writeRaster(veg, "Data/vegmap.asc", overwrite=T)
 transveg <- aggregate(transveg, 3, fun = "max", na.rm=T) #Aggregate pa into a 90m raster
 writeRaster(transveg, "Data/transveg.asc", overwrite=T)
 rm(lc)
-###############################################3
+###############################################
 
 #########################################
 ###3) Get and process climate data 
@@ -66,7 +95,7 @@ rm(lc)
 
 his <- brick(paste(climwd,"currentclimate.grd", sep = ""))
 futureSD <- brick(paste(climwd,"futureclimate.grd", sep = ""))
-info <- read.csv("C:/Users/Receptionist/Dropbox/Academics/PhD/Data/ClimateData/futureclimate_info.csv", sep = ",")
+info <- read.csv("C:/Users/nasip/Dropbox/Academics/PhD/Data/ClimateData/futureclimate_info.csv", sep = ",")
 
 ## calculate actual future projections per climatic variable
 #(load rasters developed by Jasper)....layer names mising climate variable
@@ -184,6 +213,8 @@ future <- brick("Data/future.grd")
 
 #extract each projection
 ###############################
+
+#RCP45
 bcc65 <- c("RCP45_bcccsm11_20462065_map.1","RCP45_bcccsm11_20462065_mmp01.1","RCP45_bcccsm11_20462065_pptconc.1","RCP45_bcccsm11_20462065_tmax01.1","RCP45_bcccsm11_20462065_tmin07.1")
 
 bcc100 <- c("RCP45_bcccsm11_20812100_pptconc.1","RCP45_bcccsm11_20812100_mmp01.1","RCP45_bcccsm11_20812100_map.1","RCP45_bcccsm11_20812100_tmin07.1","RCP45_bcccsm11_20812100_tmax01.1")
@@ -275,9 +306,101 @@ writeRaster(MIROCES100, overwrite=T,"Data/MIROCES100.grd")
 writeRaster(MIROCHEM65, overwrite=T,"Data/MIROCHEM65.grd")
 writeRaster(MIROCHEM100, overwrite=T,"Data/MIROCHEM100.grd")
 writeRaster(MRIC65, overwrite=T,"Data/MRIC65.grd")
-writeRaster(MRIC100,"Data/MRIC100.grd")
+writeRaster(MRIC100,overwrite=T,"Data/MRIC100.grd")
 
-plot(bcc)
+###################################################################
 
+#RCP85
+bcc65 <- c("RCP85_bcccsm11_20462065_map.1","RCP85_bcccsm11_20462065_mmp01.1","RCP85_bcccsm11_20462065_pptconc.1","RCP85_bcccsm11_20462065_tmax01.1","RCP85_bcccsm11_20462065_tmin07.1")
 
+bcc100 <- c("RCP85_bcccsm11_20812100_pptconc.1","RCP85_bcccsm11_20812100_mmp01.1","RCP85_bcccsm11_20812100_map.1","RCP85_bcccsm11_20812100_tmin07.1","RCP85_bcccsm11_20812100_tmax01.1")
+
+BNUESM65 <- c("RCP85_BNUESM_20462065_map.1","RCP85_BNUESM_20462065_mmp01.1","RCP85_BNUESM_20462065_pptconc.1","RCP85_BNUESM_20462065_tmax01.1","RCP85_BNUESM_20462065_tmin07.1")
+
+BNUESM100 <- c("RCP85_BNUESM_20812100_map.1","RCP85_BNUESM_20812100_mmp01.1","RCP85_BNUESM_20812100_pptconc.1","RCP85_BNUESM_20812100_tmax01.1","RCP85_BNUESM_20812100_tmin07.1")
+
+CanESM65 <- c("RCP85_CanESM2_20462065_map.1","RCP85_CanESM2_20462065_mmp01.1","RCP85_CanESM2_20462065_pptconc.1","RCP85_CanESM2_20462065_tmax01.1","RCP85_CanESM2_20462065_tmin07.1")
+
+CanESM100 <- c("RCP85_CanESM2_20812100_map.1","RCP85_CanESM2_20812100_mmp01.1","RCP85_CanESM2_20812100_pptconc.1","RCP85_CanESM2_20812100_tmax01.1","RCP85_CanESM2_20812100_tmin07.1")
+
+CNRMCM65 <- c("RCP85_CNRMCM5_20462065_map.1","RCP85_CNRMCM5_20462065_mmp01.1","RCP85_CNRMCM5_20462065_pptconc.1","RCP85_CNRMCM5_20462065_tmax01.1","RCP85_CNRMCM5_20462065_tmin07.1")
+
+CNRMCM100 <- c("RCP85_CNRMCM5_20812100_map.1","RCP85_CNRMCM5_20812100_mmp01.1","RCP85_CNRMCM5_20812100_pptconc.1","RCP85_CNRMCM5_20812100_tmax01.1","RCP85_CNRMCM5_20812100_tmin07.1")
+
+FGOALSs65 <- c("RCP85_FGOALSs2_20462065_map.1","RCP85_FGOALSs2_20462065_mmp01.1","RCP85_FGOALSs2_20462065_pptconc.1","RCP85_FGOALSs2_20462065_tmax01.1","RCP85_FGOALSs2_20462065_tmin07.1")
+
+FGOALSs100 <- c("RCP85_FGOALSs2_20812100_map.1","RCP85_FGOALSs2_20812100_mmp01.1","RCP85_FGOALSs2_20812100_pptconc.1","RCP85_FGOALSs2_20812100_tmax01.1","RCP85_FGOALSs2_20812100_tmin07.1")
+
+GFDLESM65 <- c("RCP85_GFDLESM2G_20462065_map.1", "RCP85_GFDLESM2G_20462065_mmp01.1","RCP85_GFDLESM2G_20462065_pptconc.1","RCP85_GFDLESM2G_20462065_tmax01.1","RCP85_GFDLESM2G_20462065_tmin07.1")
+
+GFDLESM100 <- c("RCP85_GFDLESM2G_20812100_map.1","RCP85_GFDLESM2G_20812100_mmp01.1","RCP85_GFDLESM2G_20812100_pptconc.1","RCP85_GFDLESM2G_20812100_tmax01.1","RCP85_GFDLESM2G_20812100_tmin07.1")
+
+GFDL65 <- c("RCP85_GFDLESM2M_20462065_map.1","RCP85_GFDLESM2M_20462065_mmp01.1","RCP85_GFDLESM2M_20462065_pptconc.1","RCP85_GFDLESM2M_20462065_tmax01.1","RCP85_GFDLESM2M_20462065_tmin07.1")
+
+GFDL100 <- c("RCP85_GFDLESM2M_20812100_map.1","RCP85_GFDLESM2M_20812100_mmp01.1","RCP85_GFDLESM2M_20812100_pptconc.1","RCP85_GFDLESM2M_20812100_tmax01.1","RCP85_GFDLESM2M_20812100_tmin07.1")
+
+MIROC65 <- c("RCP85_MIROC5_20462065_map.1","RCP85_MIROC5_20462065_mmp01.1","RCP85_MIROC5_20462065_pptconc.1","RCP85_MIROC5_20462065_tmax01.1","RCP85_MIROC5_20462065_tmin07.1")
+
+MIROC100 <- c("RCP85_MIROC5_20812100_map.1","RCP85_MIROC5_20812100_mmp01.1","RCP85_MIROC5_20812100_pptconc.1","RCP85_MIROC5_20812100_tmax01.1","RCP85_MIROC5_20812100_tmin07.1")
+
+MIROCES65 <- c("RCP85_MIROCESM_20462065_map.1","RCP85_MIROCESM_20462065_mmp01.1","RCP85_MIROCESM_20462065_pptconc.1","RCP85_MIROCESM_20462065_tmax01.1","RCP85_MIROCESM_20462065_tmin07.1")
+
+MIROCES100 <- c("RCP85_MIROCESM_20812100_map.1","RCP85_MIROCESM_20812100_mmp01.1","RCP85_MIROCESM_20812100_pptconc.1","RCP85_MIROCESM_20812100_tmax01.1","RCP85_MIROCESM_20812100_tmin07.1")
+
+MIROCHEM65 <- c("RCP85_MIROCESMCHEM_20462065_map.1","RCP85_MIROCESMCHEM_20462065_mmp01.1","RCP85_MIROCESMCHEM_20462065_pptconc.1","RCP85_MIROCESMCHEM_20462065_tmax01.1","RCP85_MIROCESMCHEM_20462065_tmin07.1")
+
+MIROCHEM100 <- c("RCP85_MIROCESMCHEM_20812100_map.1","RCP85_MIROCESMCHEM_20812100_mmp01.1","RCP85_MIROCESMCHEM_20812100_pptconc.1","RCP85_MIROCESMCHEM_20812100_tmax01.1","RCP85_MIROCESMCHEM_20812100_tmin07.1")
+
+MRIC65 <- c("RCP85_MRICGCM3_20462065_map.1","RCP85_MRICGCM3_20462065_mmp01.1","RCP85_MRICGCM3_20462065_pptconc.1","RCP85_MRICGCM3_20462065_tmax01.1","RCP85_MRICGCM3_20462065_tmin07.1")
+
+MRIC100 <- c("RCP85_MRICGCM3_20812100_map.1","RCP85_MRICGCM3_20812100_mmp01.1","RCP85_MRICGCM3_20812100_pptconc.1","RCP85_MRICGCM3_20812100_tmax01.1","RCP85_MRICGCM3_20812100_tmin07.1")
+
+bcc100 <- future[[which(names(future)%in%bcc100)]]
+bcc65 <-future[[which(names(future)%in%bcc65)]]
+BNUESM100 <-future[[which(names(future)%in%BNUESM100)]]
+BNUESM65 <-future[[which(names(future)%in%BNUESM65)]]
+CanESM100 <-future[[which(names(future)%in%CanESM100)]]
+CanESM65 <-future[[which(names(future)%in%CanESM65)]]
+CNRMCM100 <-future[[which(names(future)%in%CNRMCM100)]]
+CNRMCM65 <-future[[which(names(future)%in%CNRMCM65)]]
+FGOALSs100 <-future[[which(names(future)%in%FGOALSs100)]]
+FGOALSs65 <-future[[which(names(future)%in%FGOALSs65)]]
+GFDL100 <-future[[which(names(future)%in%GFDL100)]]
+GFDL65 <-future[[which(names(future)%in%GFDL65)]]
+GFDLESM100 <-future[[which(names(future)%in%GFDLESM100)]]
+GFDLESM65 <-future[[which(names(future)%in%GFDLESM65)]]
+MIROCHEM100 <-future[[which(names(future)%in%MIROCHEM100)]]
+MIROCHEM65 <- future[[which(names(future)%in%MIROCHEM65)]]
+MIROC65 <- future[[which(names(future)%in%MIROC65)]]
+MIROC100 <- future[[which(names(future)%in%MIROC100)]]
+MIROCES100 <- future[[which(names(future)%in%MIROCES100)]]
+MIROCES65 <- future[[which(names(future)%in%MIROCES65)]]
+MRIC65 <- future[[which(names(future)%in%MRIC65)]]
+MRIC100 <- future[[which(names(future)%in%MRIC100)]]
+#########################################################
+
+#write out raster for each projection
+
+writeRaster(bcc65, overwrite=T,"Data/rcp85/bcc65.grd")
+writeRaster(bcc100, overwrite=T,"Data/rcp85/bcc100.grd")
+writeRaster(BNUESM65, overwrite=T,"Data/rcp85/BNUESM65.grd")
+writeRaster(BNUESM100, overwrite=T,"Data/rcp85/BNUESM100.grd")
+writeRaster(CanESM65, overwrite=T,"Data/rcp85/CanESM65.grd")
+writeRaster(CanESM100, overwrite=T,"Data/rcp85/CanESM100.grd")
+writeRaster(CNRMCM65, overwrite=T,"Data/rcp85/CNRMCM65.grd")
+writeRaster(CNRMCM100, overwrite=T,"Data/rcp85/CNRMCM100.grd")
+writeRaster(FGOALSs65, overwrite=T,"Data/rcp85/FGOALSs65.grd")
+writeRaster(FGOALSs100, overwrite=T,"Data/rcp85/FGOALSs100.grd")
+writeRaster(GFDL100, overwrite=T,"Data/rcp85/GFDL100.grd")
+writeRaster(GFDL65, overwrite=T,"Data/rcp85/GFDL65.grd")
+writeRaster(GFDLESM65, overwrite=T,"Data/rcp85/GFDLESM65.grd")
+writeRaster(GFDLESM100, overwrite=T,"Data/rcp85/GFDLESM100.grd")
+writeRaster(MIROC65, overwrite=T,"Data/rcp85/MIROC65.grd")
+writeRaster(MIROC100, overwrite=T,"Data/rcp85/MIROC100.grd")
+writeRaster(MIROCES65, overwrite=T,"Data/rcp85/MIROCES65.grd")
+writeRaster(MIROCES100, overwrite=T,"Data/rcp85/MIROCES100.grd")
+writeRaster(MIROCHEM65, overwrite=T,"Data/rcp85/MIROCHEM65.grd")
+writeRaster(MIROCHEM100, overwrite=T,"Data/rcp85/MIROCHEM100.grd")
+writeRaster(MRIC65, overwrite=T,"Data/rcp85/MRIC65.grd")
+writeRaster(MRIC100,overwrite=T,"Data/rcp85/MRIC100.grd")
 

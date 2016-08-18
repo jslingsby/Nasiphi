@@ -14,7 +14,7 @@ library(rgdal)
 library(raster)
 library(animation)
 
-if(Sys.getenv("USERNAME")=="Receptionist") {climwd <- "C:/Users/Receptionist/Dropbox/Academics/PhD/Data/ClimateData/";datwd <- "C:/Users/Receptionist/Dropbox/Academics/PhD/Data/Rasters/"}
+if(Sys.getenv("USERNAME")=="nasip") {climwd <- "C:/Users/nasip/Dropbox/Academics/PhD/Data/ClimateData/";datwd <- "C:/Users/nasip/Dropbox/Academics/PhD/Data/Rasters/"}
 
 #########################################
 ###3) Get and process climate data 

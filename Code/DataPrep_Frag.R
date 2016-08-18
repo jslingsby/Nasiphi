@@ -17,7 +17,7 @@ library(dplyr)
 library(SDMTools)
 library(igraph)
 
-if(Sys.getenv("USERNAME")=="Receptionist") {datwd <- "C:/Users/Receptionist/Dropbox/Academics/PhD/Data/"}
+if(Sys.getenv("USERNAME")=="nasip") {datwd <- "C:/Users/nasip/Dropbox/Academics/PhD/Data/"}
 if(Sys.getenv("USER")=="jasper") {datwd <- "/Users/jasper/Documents/GIS/VegToolsRaw/"}
 if(Sys.getenv("USERNAME")=="jasper") {datwd <- "~/Nasiphi's/Data/"}
 ##########################################

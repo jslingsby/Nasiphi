@@ -24,8 +24,8 @@ library(FNN)
 
 if(Sys.getenv("USERNAME")=="jasper") {giswd <- "C:/Users/jasper.SAEON/Documents/Nasiphi's/Data/Von Hase et al 2003 Cape Lowlands Report/Lowland_/";
 datwd <-"C:/Users/jasper.SAEON/Documents/Nasiphi's/Data/Von Hase et al 2003 Cape Lowlands Report/Lowland_"}
-if(Sys.getenv("USERNAME")=="Receptionist") {giswd <- "C:/Users/Receptionist/Dropbox/Academics/PhD/Data/von Hase et al/Lowland_/";
-datwd <- "C:/Users/Receptionist/Dropbox/Academics/PhD/Data/von Hase et al/PRODUCTS/Fieldwork/"}
+if(Sys.getenv("USERNAME")=="nasi") {giswd <- "C:/Users/nasip/Dropbox/Academics/PhD/Data/von Hase et al/Lowland_/";
+datwd <- "C:/Users/nasip/Dropbox/Academics/PhD/Data/von Hase et al/Lowland_/Fieldwork/Databases_SENSITIVE/"}
 #if(Sys.getenv("USER")=="jasper") {datwd <- ""; giswd <- ""}
 setwd("~/Nasiphi's/Data/Von Hase et al 2003 Cape Lowlands Report/Lowland_")
 ##########################################
@@ -44,7 +44,7 @@ fragments <- readOGR(paste0(giswd, "Remnants/Remnant_Shape"), layer = "remnants_
 proj4string(fragments) <- "+proj=tmerc +lat_0=0 +lon_0=21 +ellps=WGS84 +datum=WGS84 +units=m"
 
 #Cape Nature data
-cape <- readOGR("C:/Users/Receptionist/Dropbox/Academics/PhD/Data/Remnants_CAPE2001_Pence2016beta/CAPE_Natural_Remnants", layer = "cape_untransformed_areas_genf15m_gw")
+cape <- readOGR("C:/Users/nasip/Dropbox/Academics/PhD/Data/Remnants_CAPE2001_Pence2016beta/CAPE_Natural_Remnants", layer = "cape_untransformed_areas_genf15m_gw")
 proj4string(cape) <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs" #EPSG:4326
 
 
@@ -102,29 +102,38 @@ segments(coordinates(wcpts)[,1], coordinates(wcpts)[,2], coordinates(fragments[g
 ###2) Get and process plot data
 ##########################################
 #Load csv data
-
+setwd("C:/Users/nasip/Dropbox/Academics/PhD/Data/von Hase et al/Lowland_/Fieldwork/Databases_SENSITIVE")
+if(!file.exists("bolandcombo.csv")){
 ### Boland domain 
-bolandsite <- read.csv("Boland-Swartland_Habitat.csv", sep = ";", skip = 3, stringsAsFactors = T))
+bolandsite <- read.csv("Boland-Swartland_Habitat.csv", sep = ";", skip = 3, stringsAsFactors = T)
 bolandvegdat <- read.csv("Boland-Swartland_Veg.csv", sep = ";")
 bolandaliens <-read.csv("Boland-Swartland_Aliens.csv", sep = ";")
-bolandspecial <-read.csv("Boland-Swartland_Special.csv", sep = ";",skip = 3)
+#bolandspecial <-read.csv("Boland-Swartland_Special.csv", sep = ";",skip = 3)
+bolandpolygons <- read.csv("Boland_polygons.csv", sep = ",")
 
-##clean and trim
+
+
+##clean and trim data
 bolandsite <- bolandsite[1:137,1:43] #remove blank cells
 rownames(bolandsite) <- bolandsite[,3]
-write.csv(bolandsite, "Boland_sitedata.csv")
-str(bolandsite)
+#write.csv(bolandsite, "Boland_sitedata.csv")
+#str(bolandsite)
 ####add spp data 
-
-## veg dat
 bolandveg <- bolandvegdat[1:13,] #create veg description data
 #fix dimensions
 bolandveg <- t(bolandveg) 
 colnames(bolandveg) <- bolandveg[1,]
 bolandveg <- as.data.frame(bolandveg[2:138,])
 #bolandveg <- bb2num(bolandveg, from = c("r", "+", "1", "2", "3", "4", "5"), to = c(0.1, 1, 5, 15, 37.5, 62.5, 87.5))
-write.csv(bolandveg,"Boland_veg.csv")
+#write.csv(bolandveg,"Boland_veg.csv")
 
+bolanddat <- merge(bolandsite, bolandpolygons,by = "Site.number")
+} else { boland <-read.csv("bolandcombo.csv", sep = ",")}
+
+
+
+
+write.csv(bolanddat,"bolandcombo.csv")
 #aliens
 bolandaliens <- bolandaliens[1:53,1:138] #remove empty rows and columns
 rownames(bolandaliens) <-bolandaliens[,1] 
@@ -173,7 +182,7 @@ write.csv(elginaliens, "Elgin_aliens.csv")
 ## Overberg domain
 overbergsite <- read.csv("Overberg_Habitat.csv", sep = ";", skip = 3)
 overbergveg <- read.csv("Overberg_Veg.csv", sep = ",", skip = 1)
-overbergaliens <-read.csv("Overberg_Aliendat.csv", sep = ",", skip = 1)
+overbergaliens <-read.csv("Data/Overberg_Aliens.csv", sep = ",", skip = 1)
 overbergspp <- read.csv("Overberg_Domspp.csv", sep = ";",skip = 1)
 overbergspecial <-read.csv("Overberg_Special.csv", sep = ",",skip = 1)
 
@@ -205,4 +214,6 @@ overbergveg$PlantSpecies_Count <- rowSums(decostand(overbergspp, "pa"))
 #######################################################
 
 
+# put alien data together, fix names and check which aliens are most abundant
 
+# 
